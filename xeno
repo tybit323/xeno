@@ -504,6 +504,12 @@ xeno_edit () {
       # Create the incoming branch
       $(cd "$repository_path" && git branch incoming)
 
+      # Get .gitmodule for submodules of the path
+      if [ -e "$path/.gitmodules" ]; then
+          cp $path/.gitmodules $repository_path
+	  # TODO append the target_name to paths of submodules
+      fi
+
       # Set up the post-receive hook.  This will commit any changes on the
       # remote end since we will do a pull after pushing local changes and we
       # will want to pick up these changes.  It will then merge the incoming
@@ -588,6 +594,16 @@ xeno_edit () {
     # Clone the remote repository
     git clone --quiet "ssh://$user$host$git_port$repository_path" \
       "$XENO_LOCAL_SESSION_DIRECTORY/$repository_name"
+
+    # Get .gitmodule from the the target, update it's path for this local repo, then fetch it
+    scp $user$host:$path/.gitmodules $XENO_LOCAL_SESSION_DIRECTORY/$repository_name
+    if [ -e "$XENO_LOCAL_SESSION_DIRECTORY/$repository_name/.gitmodules" ]; then
+	parentdir=$(basename "$remote_path") 
+	sed "s|thirdparty|$parentdir/thirdparty|g" $XENO_LOCAL_SESSION_DIRECTORY/$repository_name/.gitmodules > $XENO_LOCAL_SESSION_DIRECTORY/$repository_name/.gitmodules_update
+	mv $XENO_LOCAL_SESSION_DIRECTORY/$repository_name/.gitmodules_update $XENO_LOCAL_SESSION_DIRECTORY/$repository_name/.gitmodules
+	$(cd $XENO_LOCAL_SESSION_DIRECTORY/$repository_name && git submodule init)
+	$(cd $XENO_LOCAL_SESSION_DIRECTORY/$repository_name && git submodule update)
+    fi
 
     # Setup author configuration for the cloned repository so that we don't need
     # to specify --author flags everywhere
