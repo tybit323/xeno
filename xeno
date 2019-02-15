@@ -963,7 +963,10 @@ xeno_sync () {
         $(cd "$repository_path" && git push --quiet origin master:incoming)
         $(cd "$repository_path" && git pull --quiet --commit \
                                        --strategy recursive -X ours)
-      fi
+      	
+	$(cd "$repository_path" && git submodule init)
+	$(cd "$repository_path" && git submodule update -f)
+	fi
 
       # Mark ourselves as having found a session
       found="found"
